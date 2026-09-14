@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Genestealer Cult — Compagnon de Campagne Necromunda</title>
+    <meta name="description" content="Compagnon de jeu et de campagne pour un gang Genestealer Cult à Necromunda, avec fiches de combattant en plein écran au format paysage" />
+    <meta property="og:title" content="Genestealer Cult — Compagnon de Campagne Necromunda" />
+    <meta property="og:description" content="Compagnon de jeu et de campagne pour un gang Genestealer Cult à Necromunda, avec fiches de combattant en plein écran au format paysage" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <!-- Top Bar des Informations de Gang -->
+    <div id="top-bar" class="hidden"></div>
+
+    <!-- Conteneur Principal -->
+    <div id="app-container">
+      <div id="main-content"></div>
+    </div>
+
+    <!-- Modale Réutilisable avec Boutons de fermeture Haut et Bas -->
+    <div id="modal-overlay" class="modal hidden" style="display:none;">
+      <div class="modal-content">
+        <div id="modal-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--accent-purple, #c41e3a); padding-bottom:8px; margin-bottom:12px; flex-shrink:0;">
+          <h3 id="modal-title" style="margin:0; font-size:17px; color:var(--accent-cyan, #9b30ff);">Détails</h3>
+          <button id="modal-close-top" class="btn-danger" style="margin:0; padding:4px 10px; font-size:12px; cursor:pointer;" onclick="closeModal()">✕ Fermer</button>
+        </div>
+        <div id="modal-body"></div>
+        <div id="modal-footer" style="display:flex; justify-content:flex-end; align-items:center; border-top:1px solid #333; padding-top:10px; margin-top:12px; flex-shrink:0;">
+          <button id="modal-close-bottom" class="btn" style="padding:6px 18px; margin:0;" onclick="closeModal()">Fermer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts de Données et Logique Applicative -->
+    <!-- L'ordre de chargement est important : chaque fichier peut dépendre des
+         variables/fonctions globales définies par les fichiers précédents
+         (voir l'en-tête de chaque fichier pour le détail de ses dépendances). -->
+    <script src="./data.js"></script>
+    <script src="./data-mercenaries.js"></script>
+
+    <!-- Issus de l'ancien app.js : gang, fiche de combattant, armes/équipement -->
+    <script src="./core-state.js"></script>
+    <script src="./gang-views.js"></script>
+    <script src="./fighter-recruit.js"></script>
+    <script src="./weapons-equipment.js"></script>
+    <script src="./fighter-skills-tactics.js"></script>
+
+    <!-- Issus de l'ancien game.js : déroulement d'une partie -->
+    <script src="./game-state-scenarios.js"></script>
+    <script src="./game-roster-view.js"></script>
+    <script src="./game-fighter-detail.js"></script>
+
+    <!-- Issus de l'ancien postbattle.js : post-bataille, post-cycle, Trading Post -->
+    <script src="./postbattle-sequence.js"></script>
+    <script src="./postcycle-core.js"></script>
+    <script src="./trading-post.js"></script>
+    <script src="./xp-advancement.js"></script>
+    <script src="./postcycle-progression.js"></script>
+  </body>
+</html>
+

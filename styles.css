@@ -1,0 +1,509 @@
+:root {
+    /* Palette Genestealer Cults : violet dominant (psychose/emprise du culte),
+       rouge sombre en secondaire (zèle/sang), sur un fond quasi-noir teinté
+       violet. Les noms de variables restent inchangés (--accent-purple /
+       --accent-cyan) car ils sont référencés tels quels dans les fichiers JS —
+       seules leurs valeurs changent ici. --accent-cyan porte désormais le
+       violet dominant, --accent-purple porte le rouge secondaire. */
+    --bg-color: #0f0812;
+    --panel-bg: #1c0f22;
+    --text-main: #e6def0;
+    --accent-purple: #c41e3a;
+    --accent-cyan: #9b30ff;
+    --status-ready: #3ddc84;
+    --status-suppressed: #f5a623;
+    --status-danger: #ff3b5c;
+    --border-color: #2e1c35;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+body { background-color: var(--bg-color); color: var(--text-main); overflow-x: hidden; }
+
+/* Top Bar */
+#top-bar {
+    position: sticky; top: 0; left: 0; width: 100%;
+    background: linear-gradient(90deg, #0a0509, var(--accent-cyan));
+    padding: 10px 15px; display: flex; justify-content: space-between; align-items: center;
+    z-index: 1000; border-bottom: 2px solid var(--accent-purple);
+    font-weight: bold; text-transform: uppercase; letter-spacing: 1px;
+}
+
+.hidden { display: none !important; }
+#app-container { padding: 15px; max-width: 1200px; margin: 0 auto; }
+
+/* Buttons & Inputs */
+button {
+    background-color: var(--panel-bg); color: var(--accent-cyan);
+    border: 1px solid var(--accent-cyan); padding: 10px 16px;
+    border-radius: 5px; cursor: pointer; font-size: 14px; margin: 5px;
+    text-transform: uppercase; font-weight: bold; transition: 0.3s;
+}
+button:hover { background-color: var(--accent-cyan); color: #000; }
+button.btn-danger { border-color: var(--status-danger); color: var(--status-danger); }
+button.btn-danger:hover { background-color: var(--status-danger); color: #fff; }
+button.btn-cyan { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+button.btn-cyan:hover { background-color: var(--accent-cyan); color: #000; }
+
+input, select {
+    background-color: #000; color: var(--text-main);
+    border: 1px solid var(--accent-purple); padding: 10px;
+    border-radius: 4px; width: 100%; margin: 5px 0 15px; font-size: 15px;
+}
+
+/* Cards & Layout */
+.card {
+    background-color: var(--panel-bg); border: 1px solid var(--border-color);
+    border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+}
+.card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--accent-purple); padding-bottom: 10px; margin-bottom: 10px;}
+
+.fighter-item {
+    border: 1px solid var(--border-color); padding: 10px; margin-top: 10px;
+    border-radius: 5px; display: flex; justify-content: space-between; align-items: center;
+}
+
+/* Modale */
+.modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center;
+    z-index: 2000; padding: 15px;
+}
+.modal-content {
+    background: var(--panel-bg); padding: 18px 20px; border-radius: 8px;
+    width: 100%; max-width: 600px; max-height: 88vh;
+    display: flex; flex-direction: column;
+    border: 2px solid var(--accent-purple);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.85);
+    transition: max-width 0.2s ease, width 0.2s ease, height 0.2s ease;
+}
+#modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+/* Modale Plein Écran / Format Paysage pour les fiches de combat */
+.modal-content.modal-landscape {
+    max-width: 96vw;
+    width: 96vw;
+    max-height: 94vh;
+    height: 92vh;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 20px;
+    border-radius: 10px;
+}
+.modal-content.modal-landscape #modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+.skill-category { margin-top: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
+.skill-checkbox-group { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
+.skill-checkbox-group.disabled { opacity: 0.4; pointer-events: none; }
+
+/* Mode Combat & Ergonomie Paysage */
+.landscape-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background-color: var(--panel-bg);
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+}
+
+/* Top bar du combattant avec nom, PV, statut et bouton fermer haut */
+.card-section-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--accent-cyan);
+    padding-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Grille 2 colonnes Paysage : Gauche (Stats + Compétences) / Droite (Armes + Traits) */
+.landscape-columns-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    align-items: start;
+    margin-top: 8px;
+}
+
+@media (max-width: 950px) {
+    .landscape-columns-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.card-section-left,
+.card-section-right {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.card-section-center {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.card-section-bottom {
+    border-top: 1px solid var(--border-color);
+    padding-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 13px;
+}
+
+/* Boutons de munitions et d'enrayement */
+.btn-ammo { background-color: #333; color: #fff; border-color: #555; padding: 4px 8px; font-size: 12px; border-radius: 4px; }
+.btn-ammo.out { background-color: var(--status-suppressed); color: #000; font-weight: bold; }
+
+.btn-jam { background-color: #333; color: #fff; border-color: #555; padding: 4px 8px; font-size: 12px; border-radius: 4px; }
+.btn-jam.jammed { background-color: var(--status-danger); color: #fff; font-weight: bold; }
+
+/* Grille des conditions cumulables */
+.conditions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+    margin-top: 5px;
+}
+
+.condition-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    background: #111;
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.tactic-card-item {
+    border: 1px solid var(--accent-cyan);
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+}
+.tactic-card-item.used {
+    opacity: 0.4;
+    text-decoration: line-through;
+}
+
+/* Cartes Tactiques en cours de jeu */
+.game-tactic-card {
+    border: 1px solid var(--accent-cyan);
+    background: #181c2b;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease, border-color 0.2s ease, filter 0.2s ease;
+    box-shadow: 0 2px 8px rgba(155, 48, 255, 0.10);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.game-tactic-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(155, 48, 255, 0.22);
+}
+.game-tactic-card.used {
+    border: 1px dashed #555;
+    background: #111115;
+    opacity: 0.45;
+    filter: grayscale(0.85);
+    box-shadow: none;
+}
+.game-tactic-card.used:hover {
+    transform: none;
+    opacity: 0.65;
+}
+
+/* Bandeau Score & Priorité */
+.game-score-btn {
+    margin: 0 !important;
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-transform: none !important;
+    font-size: 15px !important;
+    font-weight: bold !important;
+    line-height: 1 !important;
+    border-radius: 4px !important;
+    background: #1b1e2e !important;
+    border: 1px solid #353856 !important;
+    color: #fff !important;
+    cursor: pointer !important;
+    transition: 0.2s !important;
+}
+.game-score-btn:hover {
+    background: var(--accent-cyan) !important;
+    border-color: var(--accent-cyan) !important;
+    color: #000 !important;
+}
+.game-score-btn.opp:hover {
+    background: #ff6b6b !important;
+    border-color: #ff6b6b !important;
+    color: #fff !important;
+}
+
+/* Alignement strict des tableaux de stats et d'armes */
+.landscape-card table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+    table-layout: fixed;
+}
+
+.landscape-card th, 
+.landscape-card td {
+    border: 1px solid var(--border-color);
+    padding: 6px 4px;
+    text-align: center;
+    font-size: 13px;
+    word-wrap: break-word;
+}
+
+.landscape-card th {
+    background-color: #2a2a2a;
+    color: var(--accent-cyan);
+    font-weight: bold;
+}
+
+/* Zone d'explication des compétences et traits */
+.description-block {
+    background: #181818;
+    border-left: 3px solid var(--accent-purple);
+    padding: 8px 12px;
+    margin-top: 6px;
+    border-radius: 0 4px 4px 0;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.description-block strong {
+    color: var(--accent-cyan);
+}
+
+.description-block.trait-block {
+    border-left-color: var(--accent-cyan);
+}
+
+/* Toast Notification (Non-bloquant pour les alertes et retours d'actions) */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast {
+    background: #181824;
+    color: #fff;
+    border: 1px solid var(--accent-cyan);
+    border-left: 5px solid var(--accent-cyan);
+    padding: 12px 18px;
+    border-radius: 6px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
+    font-size: 14px;
+    max-width: 420px;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    animation: toast-in 0.25s ease-out;
+}
+
+.toast.toast-error {
+    border-color: var(--status-danger);
+    border-left-color: var(--status-danger);
+}
+
+.toast.toast-success {
+    border-color: var(--status-ready);
+    border-left-color: var(--status-ready);
+}
+
+@keyframes toast-in {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Badges interactifs pour compétences, armes et équipements */
+.tag-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    margin: 2px 4px 2px 0;
+    transition: all 0.2s ease;
+    user-select: none;
+    line-height: 1.4;
+}
+.tag-chip:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.25);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.tag-skill {
+    background: rgba(155, 48, 255, 0.18);
+    border: 1px solid rgba(155, 48, 255, 0.5);
+    color: #d9b3ff;
+}
+.tag-skill:hover {
+    background: rgba(155, 48, 255, 0.35);
+    border-color: #c084fc;
+    color: #fff;
+}
+.tag-weapon {
+    background: rgba(196, 30, 58, 0.18);
+    border: 1px solid rgba(196, 30, 58, 0.5);
+    color: #ff9eae;
+}
+.tag-weapon:hover {
+    background: rgba(196, 30, 58, 0.35);
+    border-color: #ff3b5c;
+    color: #fff;
+}
+.tag-accessory {
+    background: rgba(46, 204, 113, 0.15);
+    border: 1px solid rgba(46, 204, 113, 0.45);
+    color: #a8e6cf;
+}
+.tag-accessory:hover {
+    background: rgba(46, 204, 113, 0.3);
+    border-color: #2ecc71;
+    color: #fff;
+}
+.tag-equip {
+    background: rgba(243, 156, 18, 0.15);
+    border: 1px solid rgba(243, 156, 18, 0.45);
+    color: #fce38a;
+}
+.tag-equip:hover {
+    background: rgba(243, 156, 18, 0.3);
+    border-color: #f39c12;
+    color: #fff;
+}
+
+/* ==========================================
+   Écran d'accueil (menu principal)
+   ========================================== */
+.hero-menu {
+    max-width: 460px;
+    margin: 8vh auto 0;
+    text-align: center;
+    padding: 0 15px;
+}
+
+.cult-mark-wrap {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    margin: 0 auto 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.cult-mark-wrap::before {
+    content: "";
+    position: absolute;
+    inset: -18px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(155, 48, 255, 0.35), transparent 70%);
+    animation: mark-pulse 4s ease-in-out infinite;
+}
+.cult-mark { position: relative; z-index: 1; }
+
+@keyframes mark-pulse {
+    0%, 100% { opacity: 0.55; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.08); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .cult-mark-wrap::before { animation: none; opacity: 0.8; }
+}
+
+.hero-title {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin: 0 0 8px;
+    background: linear-gradient(90deg, var(--accent-cyan), #e0b3ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.hero-tagline {
+    color: #b9a9c4;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0 0 30px;
+}
+
+.hero-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+}
+
+.btn-hero-primary {
+    background: var(--accent-cyan);
+    color: #0f0812;
+    border: none;
+    padding: 14px 18px;
+    font-size: 15px;
+    box-shadow: 0 6px 20px rgba(155, 48, 255, 0.35);
+}
+.btn-hero-primary:hover { background: #b366ff; color: #0f0812; }
+
+.btn-hero-secondary {
+    background: transparent;
+    color: var(--accent-purple);
+    border: 1px solid var(--accent-purple);
+    padding: 12px 18px;
+    font-size: 14px;
+}
+.btn-hero-secondary:hover { background: var(--accent-purple); color: #fff; }
+
+.hero-import-link {
+    background: none;
+    border: none;
+    color: #8a7a94;
+    text-transform: none;
+    font-weight: normal;
+    font-size: 13px;
+    letter-spacing: normal;
+    margin: 14px 0 0;
+    padding: 4px;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.hero-import-link:hover { background: none; color: var(--accent-cyan); }
