@@ -270,14 +270,20 @@ function transferFighterGearToStash(m) {
     }
     if (m.equipment && Array.isArray(m.equipment)) {
         m.equipment.forEach(e => {
-            currentGang.stash.push({ name: e.name, type: e.type || "Équipement", cost: e.cost_credits || e.cost || 0 });
-            // Le familier lié à cette référence d'équipement quitte le roster actif
-            // avec son propriétaire, mais reste récupérable via l'objet ci-dessus,
-            // rangé dans le stash : n'importe quel autre guerrier pourra le
-            // reprendre depuis la même catégorie d'équipement "Familiers".
+            let stashItem = { name: e.name, type: e.type || "Équipement", cost: e.cost_credits || e.cost || 0 };
+            // Référence de familier : familiarCharId doit être préservé pour que
+            // adoptFamiliarFromStash() (weapons-equipment.js) puisse le retrouver
+            // et le proposer à la reprise par un autre guerrier. Sans ce champ,
+            // l'objet atterrissait bien dans la réserve mais restait impossible à
+            // reprendre (bug corrigé ici). Le membre actif lié (avancement, XP...)
+            // ne survit pas au départ de son propriétaire : une fiche neuve sera
+            // recréée à la reprise, comme pour tout familier acheté depuis la
+            // réserve.
             if (e.familiarMemberId) {
+                stashItem.familiarCharId = e.familiarCharId;
                 currentGang.members = currentGang.members.filter(fm => fm.id !== e.familiarMemberId);
             }
+            currentGang.stash.push(stashItem);
         });
     }
 }
