@@ -693,6 +693,24 @@ function calculateFighterCost(m) {
     return total;
 }
 
+// Comme calculateFighterCost(), mais exclut le coût des objets d'équipement
+// "costPrepaid" (familiers achetés via buyFamiliarForFighter/adoptFamiliarFromStash) :
+// leur coût a déjà été débité immédiatement des crédits du gang au moment de
+// l'achat (voir buyFamiliarForFighter dans weapons-equipment.js), donc il ne
+// doit pas être recompté lors d'un débit/remboursement basé sur le coût total
+// de la fiche. Corrige un double-débit qui se produisait en phase de création
+// de gang : saveFighter() y déduit un delta calculé sur tempFighter.totalCost
+// (calculateFighterCost), qui inclut ce coût déjà payé — d'où un guerrier dont
+// le familier venait d'être acheté qui se retrouvait facturé deux fois pour
+// lui. À utiliser uniquement pour calculer un montant à débiter/rembourser
+// (saveFighter() en phase de création, performRemoveFighter()) — jamais pour
+// m.totalCost lui-même (affichage, cote du gang), qui doit continuer à
+// refléter la pleine valeur du guerrier, familier compris.
+function calculateFighterChargeableCost(m) {
+    let prepaidTotal = (m.equipment || []).reduce((sum, e) => sum + (e && e.costPrepaid ? (e.cost_credits || e.cost || 0) : 0), 0);
+    return calculateFighterCost(m) - prepaidTotal;
+}
+
 function calculateGangRating(gang) {
     if (!gang || !gang.members) return 0;
     let rating = 0;
