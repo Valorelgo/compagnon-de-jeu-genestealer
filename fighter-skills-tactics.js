@@ -185,17 +185,30 @@ function saveFighter() {
     }
 
     tempFighter.totalCost = calculateFighterCost(tempFighter);
+    // Déclaré ici (portée de toute la fonction) et alimenté par les deux
+    // branches ci-dessous : sert uniquement au message de fin de fonction
+    // (édition d'un guerrier déjà recruté). Un ancien bug référençait cette
+    // variable après coup alors qu'elle n'existait que dans la branche "gang
+    // déjà validé", ce qui provoquait un plantage (ReferenceError) en éditant
+    // un guerrier déjà recruté pendant la phase de création.
+    let creditsToPay = 0;
 
     if (!currentGang.isEstablished) {
-        let oldCost = 0;
+        // Le montant réellement débité exclut le coût des familiers déjà payés
+        // au moment de l'achat (costPrepaid) — voir calculateFighterChargeableCost
+        // (core-state.js) : sans cette exclusion, acheter un familier puis
+        // sauvegarder la fiche le facturait une seconde fois.
+        let oldChargeable = 0;
         if (appState.editTarget !== null) {
-            oldCost = currentGang.members[appState.editTarget].totalCost;
+            oldChargeable = calculateFighterChargeableCost(currentGang.members[appState.editTarget]);
         }
-        let diff = tempFighter.totalCost - oldCost;
+        let newChargeable = calculateFighterChargeableCost(tempFighter);
+        let diff = newChargeable - oldChargeable;
         if (currentGang.credits - diff < 0) return showToast("Crédits insuffisants !", "error");
         currentGang.credits -= diff;
+        creditsToPay = diff;
     } else {
-        let creditsToPay = 0;
+        creditsToPay = 0;
 
         if (appState.editTarget === null) {
             const charDef = db.characters.find(c => c.id === tempFighter.charId);
@@ -321,15 +334,18 @@ function removeFighter(idx) {
     const m = currentGang.members[idx];
     if (!m) return;
 
+    const isCreationPhase = !currentGang.isEstablished;
     const gearVanishes = shouldFighterGearVanish(m);
 
     showConfirmModal(
         "Licencier le combattant",
         `Voulez-vous vraiment licencier <strong>${m.customName}</strong> (${m.charName}) ?<br><br>
-        <small style="color:#aaa; font-size:13px;">${gearVanishes
-            ? `Mercenaire, familier, bête ou brute : son équipement et ses armes disparaissent avec lui/elle.`
-            : `Ses armes et équipements rejoindront automatiquement la réserve du gang (Stash).`}</small><br>
-        <small style="color:#e74c3c; font-size:12px;">Son coût (${m.totalCost||0} cr) n'est pas remboursé : il/elle quitte simplement le gang.</small>`,
+        ${isCreationPhase
+            ? `<small style="color:#2ecc71; font-size:13px;">Gang pas encore validé : son coût (${m.totalCost||0} cr) sera intégralement remboursé, armes, équipements et familiers éventuels compris. Rien ne part dans la réserve du gang à ce stade.</small>`
+            : `<small style="color:#aaa; font-size:13px;">${gearVanishes
+                ? `Mercenaire, familier, bête ou brute : son équipement et ses armes disparaissent avec lui/elle.`
+                : `Ses armes et équipements rejoindront automatiquement la réserve du gang (Stash).`}</small><br>
+            <small style="color:#e74c3c; font-size:12px;">Son coût (${m.totalCost||0} cr) n'est pas remboursé : il/elle quitte simplement le gang.</small>`}`,
         "Licencier",
         () => {
             performRemoveFighter(idx);
@@ -340,14 +356,33 @@ function removeFighter(idx) {
 function performRemoveFighter(idx) {
     const m = currentGang.members[idx];
     if (!m) return;
+    const fighterId = m.id;
+    const isCreationPhase = !currentGang.isEstablished;
 
-    transferFighterGearToStash(m);
+    if (isCreationPhase) {
+        // Gang pas encore validé : un licenciement est un simple retrait de la
+        // liste de recrutement, pas une vraie perte de campagne — tout est
+        // remboursé (coût du guerrier, qui inclut déjà ses armes, équipements et
+        // tout familier rattaché — voir calculateFighterCost). Rien ne part dans
+        // la réserve : elle n'a de sens qu'après validation (voir isCampaign
+        // dans weapons-equipment.js, qui conditionne déjà tout achat/reprise
+        // depuis la réserve à currentGang.isEstablished).
+        currentGang.credits = (currentGang.credits || 0) + (m.totalCost || 0);
+        let famIds = getFamiliarsOfFighter(fighterId).map(f => f.id);
+        currentGang.members = currentGang.members.filter(x => x.id !== fighterId && !famIds.includes(x.id));
+    } else {
+        transferFighterGearToStash(m);
+        currentGang.members = currentGang.members.filter(x => x.id !== fighterId);
+    }
 
-    currentGang.members.splice(idx, 1);
     calculateGangRating(currentGang);
     saveGangs();
     renderGangManage(document.getElementById('main-content'));
-    showToast(`${m.customName} a été licencié(e). ${shouldFighterGearVanish(m) ? "Son équipement a disparu avec lui/elle." : "Ses armes et équipements ont rejoint la réserve du gang."}`);
+    if (isCreationPhase) {
+        showToast(`${m.customName} a été licencié(e) et son coût (${m.totalCost || 0} cr) a été remboursé.`, "success");
+    } else {
+        showToast(`${m.customName} a été licencié(e). ${shouldFighterGearVanish(m) ? "Son équipement a disparu avec lui/elle." : "Ses armes et équipements ont rejoint la réserve du gang."}`);
+    }
     if (typeof ensureGangHasLeader === 'function') ensureGangHasLeader();
 }
 
