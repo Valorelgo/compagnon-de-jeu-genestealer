@@ -90,7 +90,7 @@ function openSkillModal() {
     }
 
     html += `</div><br><button class="btn" onclick="closeModal()">Fermer</button>`;
-    openModal("Menu des Compétences (Création)", html);
+    openModal("Menu des Compétences (Création)", html, false, true);
 }
 
 function toggleSpecialistSkill(skillId, cat) {
@@ -389,7 +389,7 @@ function performRemoveFighter(idx) {
 // ==========================================
 // MODALE & UTILS EXPORT
 // ==========================================
-function openModal(title, content, isLandscape = false) {
+function openModal(title, content, isLandscape = false, isWide = false) {
     const modalTitle = document.getElementById('modal-title');
     const modalBody = document.getElementById('modal-body');
     const modalOverlay = document.getElementById('modal-overlay');
@@ -400,10 +400,11 @@ function openModal(title, content, isLandscape = false) {
     if (modalBody) modalBody.innerHTML = content;
     
     if (modalContent) {
+        modalContent.classList.remove('modal-landscape', 'modal-wide');
         if (isLandscape) {
             modalContent.classList.add('modal-landscape');
-        } else {
-            modalContent.classList.remove('modal-landscape');
+        } else if (isWide) {
+            modalContent.classList.add('modal-wide');
         }
     }
 
