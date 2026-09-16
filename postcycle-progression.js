@@ -144,6 +144,40 @@ function quickEquipStashItem(itemName, fighterId) {
 
     let stItem = currentGang.stash[sIdx];
     let itemType = (typeof stItem === 'object' && stItem.type) ? stItem.type : '';
+
+    // Familier : ne doit jamais être traité comme un simple objet d'équipement.
+    // Il faut recréer sa fiche complète de combattant (stats, compétences...) via
+    // createFamiliarMemberObject, exactement comme adoptFamiliarFromStash() le
+    // fait déjà depuis la fiche du combattant — sinon on se retrouve avec un
+    // objet inerte dans l'équipement, sans figurine jouable derrière.
+    if (itemType === 'Familier') {
+        let familiarCharId = (typeof stItem === 'object') ? stItem.familiarCharId : null;
+        let charDef = familiarCharId ? db.characters.find(c => c.id === familiarCharId) : null;
+        if (!charDef) return showToast("Ce familier ne peut pas être identifié (donnée de réserve obsolète ou corrompue).", "error");
+
+        currentGang.stash.splice(sIdx, 1);
+
+        let familiarMember = createFamiliarMemberObject(charDef, m.id);
+        currentGang.members.push(familiarMember);
+
+        if (!m.equipment) m.equipment = [];
+        m.equipment.push({
+            id: 'famref_' + familiarMember.id,
+            name: charDef.name,
+            type: 'Familier',
+            cost_credits: charDef.cost || 0,
+            familiarMemberId: familiarMember.id,
+            familiarCharId: charDef.id,
+            costPrepaid: true,
+            fromStash: true
+        });
+
+        saveGangs();
+        showToast(`${charDef.name} (repris de la réserve) est rattaché à ${m.customName} !`, "success");
+        openStashModal();
+        return;
+    }
+
     let isGrenade = (typeof stItem === 'object' && (stItem.type === 'Grenade' || stItem.counts_as_equip || (stItem.id && ((stItem.id.startsWith('wpn_grenade_') && stItem.id !== 'wpn_grenade_launcher') || stItem.id === 'wpn_charge_demo'))));
     let isWeapon = itemType === 'Arme' && !isGrenade;
 
