@@ -550,7 +550,7 @@ function promoteToLeader(fighterId) {
 const SCENARIO_TYPES = {
     intensification: {
         name: "Intensification de la bataille",
-        desc: "Choisissez 3 guerriers. Le programme tirera 1 à 3 guerriers aléatoires. Vous pourrez ensuite choisir jusqu'à 5 renforts."
+        desc: "Choisissez 3 guerriers. Convenez avec votre adversaire du nombre de guerriers tirés au hasard en plus (1 à 3, identique pour les deux joueurs) : le programme les tirera parmi le reste de votre liste. Vous pourrez ensuite choisir jusqu'à 5 renforts. D3 renforts arriveront en jeu à partir du second round."
     },
     donnez_tout: {
         name: "Donnez tout !",
@@ -562,7 +562,7 @@ const SCENARIO_TYPES = {
     },
     attaque_surprise: {
         name: "Attaque surprise !",
-        desc: "Attaquant (4 choisis + 4 au hasard) | Défenseur (3 choisis + jusqu'à 7 renforts)."
+        desc: "Attaquant (4 choisis + 4 au hasard) | Défenseur (3 choisis + jusqu'à 7 renforts). D3 renforts arriveront en jeu à partir du second round."
     },
     force_intervention: {
         name: "Force d'intervention",
@@ -570,7 +570,7 @@ const SCENARIO_TYPES = {
     },
     force_reconnaissance: {
         name: "Force de reconnaissance",
-        desc: "Le programme détermine un nombre (1 à 3) de guerriers à choisir, puis ajoute 5 guerriers au hasard."
+        desc: "Convenez avec votre adversaire du nombre de guerriers à choisir (1 à 3, identique pour les deux joueurs), puis le programme ajoute 5 guerriers au hasard."
     }
 };
 
@@ -578,7 +578,13 @@ let setupState = {
     scenarioKey: 'intensification',
     role: 'attacker',
     step: 1,
-    reconCount: Math.floor(Math.random() * 3) + 1,
+    // Nombre de guerriers convenu entre les deux joueurs (1 à 3), saisi
+    // manuellement — voir le sélecteur dans renderGameSetup(). reconCount sert
+    // à Force de reconnaissance (nombre à choisir soi-même avant le tirage de 5
+    // renforts), intensificationRandomCount à Intensification (nombre de
+    // guerriers tirés au hasard en plus des 3 choisis).
+    reconCount: 1,
+    intensificationRandomCount: 1,
     initialPickedIds: [],
     randomDrawnIds: [],
     reinforcementPickedIds: [],
@@ -598,7 +604,8 @@ function resetSetupState() {
         scenarioKey: 'intensification',
         role: 'attacker',
         step: 1,
-        reconCount: Math.floor(Math.random() * 3) + 1,
+        reconCount: 1,
+        intensificationRandomCount: 1,
         initialPickedIds: [],
         randomDrawnIds: [],
         reinforcementPickedIds: [],
@@ -845,6 +852,28 @@ function renderGameSetup(container) {
                 </div>
             ` : ''}
 
+            ${setupState.scenarioKey === 'force_reconnaissance' ? `
+                <div style="margin-bottom:12px; background:#111; padding:8px; border-radius:5px;">
+                    <label style="font-weight:bold; margin-right:10px;">Nombre de guerriers à choisir (convenu avec l'adversaire, identique pour les deux) :</label><br>
+                    ${[1, 2, 3].map(n => `
+                        <label style="margin-right:15px; cursor:pointer;">
+                            <input type="radio" name="reconCount" value="${n}" ${setupState.reconCount === n ? 'checked' : ''} onchange="changeReconCount(${n})"> ${n}
+                        </label>
+                    `).join('')}
+                </div>
+            ` : ''}
+
+            ${setupState.scenarioKey === 'intensification' ? `
+                <div style="margin-bottom:12px; background:#111; padding:8px; border-radius:5px;">
+                    <label style="font-weight:bold; margin-right:10px;">Nombre de guerriers tirés au hasard en plus (convenu avec l'adversaire, identique pour les deux) :</label><br>
+                    ${[1, 2, 3].map(n => `
+                        <label style="margin-right:15px; cursor:pointer;">
+                            <input type="radio" name="intensificationCount" value="${n}" ${setupState.intensificationRandomCount === n ? 'checked' : ''} onchange="changeIntensificationRandomCount(${n})"> ${n}
+                        </label>
+                    `).join('')}
+                </div>
+            ` : ''}
+
             <hr style="border-color:#333; margin:15px 0;">
     `;
 
@@ -895,7 +924,7 @@ function renderStep1View(availableMembers) {
     else if (key === 'force_reconnaissance') { 
         let req = Math.min(setupState.reconCount, availableMembers.length);
         maxSelect = req;
-        labelHelp = `🎲 Tirage Force de reconnaissance : vous devez choisir ${req} guerrier(s).`; 
+        labelHelp = `Nombre convenu avec l'adversaire : vous devez choisir ${req} guerrier(s).`; 
     }
 
     let html = `
@@ -1018,6 +1047,17 @@ function changeRole(role) {
     renderGameSetup(document.getElementById('main-content'));
 }
 
+function changeReconCount(n) {
+    setupState.reconCount = n;
+    setupState.initialPickedIds = [];
+    renderGameSetup(document.getElementById('main-content'));
+}
+
+function changeIntensificationRandomCount(n) {
+    setupState.intensificationRandomCount = n;
+    renderGameSetup(document.getElementById('main-content'));
+}
+
 function toggleInitialPick(id, maxLimit) {
     let idx = setupState.initialPickedIds.indexOf(id);
     if (idx >= 0) {
@@ -1074,7 +1114,7 @@ function validateStep1() {
     if (key === 'intensification') {
         let req = Math.min(3, availableMembers.length);
         if (setupState.initialPickedIds.length !== req) return showToast(`Veuillez choisir exactement ${req} guerrier(s).`, "error");
-        let nbRandom = Math.floor(Math.random() * 3) + 1;
+        let nbRandom = setupState.intensificationRandomCount || 1;
         let drawn = getRandomFighters(remainingPool, nbRandom);
         setupState.randomDrawnIds = drawn.map(m => m.id);
     } 
