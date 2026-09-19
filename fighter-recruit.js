@@ -563,7 +563,9 @@ function renderFighterEdit(container) {
                             ${lockedOptionsHTML}
                             ${w.accessory ? `<br><small style="color:var(--accent-cyan); margin-left:12px;">↳ Accessoire (1 max) : ${w.accessory.name} ${w.accessory.effect ? `— <em>${w.accessory.effect}</em>` : ''} ${w.accessory.fromStash ? '<span style="color:#2ecc71;">(Réserve - 0c)</span>' : `(${w.accessory.cost_credits||0}c)`} ${!isBeast && (!isMerc || isHiveScum) ? `<button class="btn-danger" style="padding:2px 6px; font-size:10px; margin-left:5px;" onclick="removeWeaponAccessory(${i})">Retirer accessoire</button>` : ''}</small>` : (!isBeast && (!isMerc || isHiveScum) ? `<br><button style="padding:2px 6px; font-size:11px; margin-left:12px; margin-top:4px;" onclick="openWeaponAccessoryModal(${i})">+ Ajouter un accessoire (1 max)</button>` : '')}
                         </div>
-                        <button class="btn-danger" style="padding:2px 6px; font-size:11px; flex-shrink:0;" onclick="removeWeapon(${i})" title="${currentGang && currentGang.isEstablished ? 'Déséquiper et envoyer dans la réserve (avec accessoire si équipé)' : 'Supprimer'}">${currentGang && currentGang.isEstablished ? 'Déséquiper' : 'Supprimer'}</button>
+                        ${w.isInnateWeapon
+                            ? `<span style="color:var(--accent-cyan); font-size:11px; font-weight:bold; flex-shrink:0; white-space:nowrap;">[Innée]</span>`
+                            : `<button class="btn-danger" style="padding:2px 6px; font-size:11px; flex-shrink:0;" onclick="removeWeapon(${i})" title="${currentGang && currentGang.isEstablished ? 'Déséquiper et envoyer dans la réserve (avec accessoire si équipé)' : 'Supprimer'}">${currentGang && currentGang.isEstablished ? 'Déséquiper' : 'Supprimer'}</button>`}
                     </div>
                     `;
                 }).join('')}

@@ -130,6 +130,9 @@ function openFighterDetailModal(idx) {
 
     let st = m.stats || {};
     let armorDeltas = getArmorStatDeltas(m);
+    // Frénésie (condition de jeu uniquement, cf. Berserker) : +1A tant qu'elle
+    // est active. Même présentation que les bonus d'armure (formatStatWithArmorDelta).
+    let frenzyDelta = (m.conditions && m.conditions['Frénésie']) ? 1 : 0;
 
     // 4. MISE EN PAGE PAYSAGE : 2 COLONNES (GAUCHE = CARACTÉRISTIQUES + COMPÉTENCES / DROITE = ARMES + TRAITS)
     let html = `
@@ -191,7 +194,7 @@ function openFighterDetailModal(idx) {
                                         <td>${formatMovementWithMount(m)}</td><td>${st.WS||'-'}</td><td>${st.BS||'-'}</td>
                                         <td>${st.S||'-'}</td><td>${st.T||'-'}</td><td>${st.W||'-'}</td>
                                         <td>${armorDeltas && armorDeltas.I !== undefined ? formatStatWithArmorDelta(st.I, armorDeltas.I) : (st.I||'-')}</td>
-                                        <td>${st.A||'-'}</td>
+                                        <td>${frenzyDelta ? formatStatWithArmorDelta(st.A, frenzyDelta) : (st.A||'-')}</td>
                                         <td>${armorDeltas && armorDeltas.Sv !== undefined ? formatStatWithArmorDelta(st.Sv, armorDeltas.Sv) : (st.Sv||'-')}</td>
                                         <td>${st.Ld||'-'}</td><td>${st.Cl||'-'}</td><td>${st.Wil||'-'}</td>
                                         <td>${st.Int||'-'}</td>

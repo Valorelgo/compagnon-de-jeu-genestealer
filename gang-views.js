@@ -165,6 +165,26 @@ function ensureInnateFighterSkills(gang) {
 
     gang.members.forEach(m => {
         if (!m.skills) m.skills = [];
+        if (!m.weapons) m.weapons = [];
+
+        // Armes intégrées données par une compétence (générique, toutes
+        // factions) : voir INNATE_WEAPON_SKILLS (data.js). Idempotent — ne
+        // rajoute rien si l'arme est déjà présente ; ne retire rien si la
+        // compétence correspondante n'est plus là (cas normalement impossible
+        // pour une compétence acquise, mais on ne supprime jamais de matériel
+        // silencieusement).
+        if (typeof INNATE_WEAPON_SKILLS !== 'undefined') {
+            m.skills.forEach(s => {
+                let weaponId = INNATE_WEAPON_SKILLS[s.id];
+                if (!weaponId) return;
+                if (m.weapons.some(w => w.id === weaponId)) return;
+                let weaponDef = (typeof db !== 'undefined' && db.weapons) ? db.weapons.find(w => w.id === weaponId) : null;
+                if (!weaponDef) return;
+                let item = JSON.parse(JSON.stringify(weaponDef));
+                item.isDefault = true;
+                m.weapons.push(item);
+            });
+        }
 
         // Mise à niveau du nom du Heavy stubber*
         if (m.weapons) {
@@ -456,6 +476,9 @@ function getMaxWeaponSlots(fighter) {
 
 function getWeaponSlotCost(w) {
     if (!w || !w.name) return 1;
+    // Arme intégrée donnée par une compétence (ex : Headbutt) : ne compte
+    // jamais dans la limite d'emplacements, quoi qu'il arrive.
+    if (w.isInnateWeapon) return 0;
     if (w.counts_as_equip || w.type === 'Grenade' || (w.id && ((w.id.startsWith('wpn_grenade_') && w.id !== 'wpn_grenade_launcher') || w.id === 'wpn_charge_demo'))) {
         return 0;
     }

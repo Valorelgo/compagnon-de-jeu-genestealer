@@ -289,6 +289,13 @@ const db = {
         { id: "wpn_couteau_stylet", name: "Couteau stylet", profiles: [{ name: "Unique", SR: "E", LR: "-", S: "-", AP: "-", L: 1, traits: "melee, toxine (3+)" }], cost_credits: 25, cost_tp: 2, is_gang_weapon: false, is_hive_scum: false },
         { id: "wpn_epee_stylet", name: "Epée stylet", profiles: [{ name: "Unique", SR: "E", LR: "-", S: "-", AP: "-1", L: 1, traits: "melee, toxine (3+), parade" }], cost_credits: 45, cost_tp: 2, is_gang_weapon: false, is_hive_scum: false },
 
+        // Armes intégrées données automatiquement par une compétence (générique,
+        // toutes factions) : voir INNATE_WEAPON_SKILLS après la fermeture de db
+        // ci-dessous, et la synchronisation dans ensureInnateFighterSkills()
+        // (gang-views.js). isInnateWeapon: true => coût 0, jamais un emplacement
+        // d'arme, non retirable manuellement (badge "Innée" sur la fiche).
+        { id: "wpn_headbutt", name: "Headbutt", profiles: [{ name: "Unique", SR: "E", LR: "-", S: "S+1", AP: "-", L: 1, traits: "melee, attaques additionnelles (1)" }], cost_credits: 0, isInnateWeapon: true },
+
         // Armes spécifiques Genestealer Cults
         // Non disponible à l'achat normal (is_gang_weapon: false, pas de specific_to) :
         // seule la compétence Extra arm (case à cocher ou Alpha) peut donner cette
@@ -459,4 +466,15 @@ const db = {
         "Entoilé": "Le guerrier ne peut plus se déplacer, ni être déplacé et il subit un -1 à tous ses jets pour toucher. À la fin de son activation, un test de force réussi le libère.",
         "Folie": "Quand un guerrier atteint de folie s'active, jeter un dé sur le tableau de folie pour voir comment il va agir. À la fin de son activation, un jet de Will réussi annule la condition folie."
     }
+};
+
+// Correspondance compétence -> arme intégrée (générique, toutes factions) :
+// toute compétence dont le texte décrit une "arme intégrée" doit apparaître
+// automatiquement, sous forme d'arme, sur la fiche du guerrier qui la
+// possède — voir isInnateWeapon dans db.weapons ci-dessus et la
+// synchronisation dans ensureInnateFighterSkills() (gang-views.js).
+// Pour ajouter une nouvelle arme intégrée : ajouter l'arme dans db.weapons
+// (isInnateWeapon: true, cost_credits: 0) puis une entrée ici.
+const INNATE_WEAPON_SKILLS = {
+    "sk_coup_boule": "wpn_headbutt" // Headbutt
 };

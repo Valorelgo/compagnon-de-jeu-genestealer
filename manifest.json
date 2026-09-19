@@ -1,0 +1,23 @@
+{
+  "short_name": "Escher",
+  "name": "Escher Underhive Builder",
+  "icons": [
+    {
+      "src": "icon.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#121212",
+  "theme_color": "#8a2be2",
+  "display": "standalone",
+  "orientation": "any"
+}
