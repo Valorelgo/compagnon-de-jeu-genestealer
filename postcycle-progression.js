@@ -695,7 +695,15 @@ function saveMatchToHistory() {
 
     let credPrimary = parseInt(document.getElementById('hist-cred-primary')?.value) || 0;
     let credSecondary = parseInt(document.getElementById('hist-cred-secondary')?.value) || 0;
-    let totalCredits = credPrimary + credSecondary;
+
+    // Territoire Corpse Farm (voir battleCreditsPerOOA dans db.territories) :
+    // +X crédits par ennemi mis hors de combat pendant la partie, ajoutés
+    // automatiquement (voir aussi l'affichage informatif dans renderPostBattleView).
+    let battleTerritoryDef = (typeof gameScores !== 'undefined' && gameScores) ? getTerritoryDef(gameScores.territoryId) : null;
+    let totalEnemiesOOAForCredits = (typeof currentGameRoster !== 'undefined' ? currentGameRoster : []).reduce((sum, m) => sum + ((m.liveXP && m.liveXP.ooaKills) ? m.liveXP.ooaKills : 0), 0);
+    let corpseFarmBonus = (battleTerritoryDef && battleTerritoryDef.battleCreditsPerOOA) ? totalEnemiesOOAForCredits * battleTerritoryDef.battleCreditsPerOOA : 0;
+
+    let totalCredits = credPrimary + credSecondary + corpseFarmBonus;
 
     let repChange = parseInt(document.getElementById('hist-rep')?.value) || 0;
 
@@ -730,6 +738,7 @@ function saveMatchToHistory() {
         result: result,
         primaryCredits: credPrimary,
         secondaryCredits: credSecondary,
+        territoryBonusCredits: corpseFarmBonus,
         totalCredits: totalCredits,
         repChange: repChange,
         territory: territorySummary

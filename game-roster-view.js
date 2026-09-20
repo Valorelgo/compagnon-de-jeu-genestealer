@@ -26,6 +26,17 @@ function renderGameView(container) {
                 </div>
             </div>
 
+            <!-- BANDEAU TERRITOIRE DE LA PARTIE -->
+            ${(() => {
+                let tDef = (typeof gameScores !== 'undefined' && gameScores) ? getTerritoryDef(gameScores.territoryId) : null;
+                if (!tDef || !tDef.battleEffect || tDef.battleEffect === 'Aucun effet en jeu.') return '';
+                return `
+                    <div style="margin-top:10px; background:#221a08; border:1px solid #f39c12; border-radius:6px; padding:8px 12px; font-size:13px;">
+                        🚩 <strong style="color:#f39c12;">${tDef.name}</strong> : ${tDef.battleEffect}
+                    </div>
+                `;
+            })()}
+
             <!-- BANDEAU SCORE ET PRIORITÉ -->
             ${renderGameScorePriorityBanner()}
 
@@ -855,6 +866,14 @@ function processEndGame() {
                     seriouslyInjured: (battleFighter.liveXP && battleFighter.liveXP.seriouslyInjured) || 0,
                     scenario: (battleFighter.liveXP && battleFighter.liveXP.scenario) || 0,
                     ooaKills: (battleFighter.liveXP && battleFighter.liveXP.ooaKills) || 0,
+                    // Territoire Fighting Pit : +1 XP en plus par ennemi mis OOA ou
+                    // sérieusement blessé (voir getFighterBattleXP, game-state-scenarios.js).
+                    // Conservé ici pour que le détail affiché en post-bataille reste
+                    // exact même si gameScores a changé entre-temps.
+                    fightingPitBonus: (() => {
+                        let tDef = (typeof gameScores !== 'undefined' && gameScores) ? getTerritoryDef(gameScores.territoryId) : null;
+                        return (tDef && tDef.battleXpBonusPerKillOrSI) || 0;
+                    })(),
                     status: battleFighter.status,
                     wasSeriouslyInjuredWhenFled: !!battleFighter.wasSeriouslyInjuredWhenFled
                 };

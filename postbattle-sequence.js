@@ -22,6 +22,11 @@ function renderPostBattleView(container) {
     let ooaFighters = (currentGang.members || []).filter(m => m.ooa === true && !m.isFamiliar);
     let totalEnemiesOOA = currentGameRoster.reduce((sum, m) => sum + ((m.liveXP && m.liveXP.ooaKills) ? m.liveXP.ooaKills : 0), 0);
 
+    // Territoire Corpse Farm (voir battleCreditsPerOOA dans db.territories) :
+    // +X crédits par ennemi mis hors de combat pendant la partie.
+    let battleTerritoryDef = (typeof gameScores !== 'undefined' && gameScores) ? getTerritoryDef(gameScores.territoryId) : null;
+    let corpseFarmBonus = (battleTerritoryDef && battleTerritoryDef.battleCreditsPerOOA) ? totalEnemiesOOA * battleTerritoryDef.battleCreditsPerOOA : 0;
+
     let dbTerritories = (typeof db !== 'undefined' && db.territories) ? db.territories : [];
     let gangTerritories = currentGang.territories || [];
 
@@ -75,8 +80,9 @@ function renderPostBattleView(container) {
 
                                 let details = [];
                                 details.push('+1 Participation');
-                                if (gain.ooaKills > 0) details.push(`+${gain.ooaKills * 2} (${gain.ooaKills} ennemi(s) OOA)`);
-                                if (gain.seriouslyInjured > 0) details.push(`+${gain.seriouslyInjured} (Sér. blessé causé)`);
+                                let fpBonus = gain.fightingPitBonus || 0;
+                                if (gain.ooaKills > 0) details.push(`+${gain.ooaKills * (2 + fpBonus)} (${gain.ooaKills} ennemi(s) OOA${fpBonus ? ', Fighting Pit' : ''})`);
+                                if (gain.seriouslyInjured > 0) details.push(`+${gain.seriouslyInjured * (1 + fpBonus)} (${gain.seriouslyInjured} sér. blessé(s) causé(s)${fpBonus ? ', Fighting Pit' : ''})`);
                                 if (gain.assistance > 0) details.push(`+${gain.assistance} (Assistance)`);
                                 if (gain.objective > 0) details.push(`+${gain.objective} (Objectif)`);
                                 if (gain.scenario > 0) details.push(`+${gain.scenario} (Scénario)`);
@@ -192,6 +198,12 @@ function renderPostBattleView(container) {
                         <label style="font-size:12px;">Ennemis mis OOA (calculé) :</label>
                         <input type="text" value="${totalEnemiesOOA}" disabled style="width:100%; padding:4px; background:#222; color:#2ecc71; font-weight:bold;">
                     </div>
+                    ${corpseFarmBonus > 0 ? `
+                    <div>
+                        <label style="font-size:12px;">Bonus territoire (Corpse Farm, ajouté automatiquement) :</label>
+                        <input type="text" value="+${corpseFarmBonus} cr" disabled style="width:100%; padding:4px; background:#222; color:#2ecc71; font-weight:bold;">
+                    </div>
+                    ` : ''}
                     <div>
                         <label style="font-size:12px;">Variation Réputation (+/-) :</label>
                         <input type="number" id="hist-rep" value="0" style="width:100%; padding:4px;" placeholder="+1, -1...">

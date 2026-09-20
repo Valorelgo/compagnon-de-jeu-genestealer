@@ -578,6 +578,10 @@ let setupState = {
     scenarioKey: 'intensification',
     role: 'attacker',
     step: 1,
+    // Territoire sur lequel se déroule la partie (voir db.territories,
+    // battleEffect/battleLdBonus/battleCreditsPerOOA/battleXpBonusPerKillOrSI) :
+    // demandé en tout premier, avant même le scénario (voir renderGameSetup()).
+    territoryId: null,
     // Nombre de guerriers convenu entre les deux joueurs (1 à 3), saisi
     // manuellement — voir le sélecteur dans renderGameSetup(). reconCount sert
     // à Force de reconnaissance (nombre à choisir soi-même avant le tirage de 5
@@ -604,6 +608,7 @@ function resetSetupState() {
         scenarioKey: 'intensification',
         role: 'attacker',
         step: 1,
+        territoryId: null,
         reconCount: 1,
         intensificationRandomCount: 1,
         initialPickedIds: [],
@@ -812,6 +817,24 @@ function renderGameSetup(container) {
             </div>
             ${isQuick ? `<p style="color:#aaa; font-size:13px; margin-bottom:12px;">Même sélection de scénarios, règles de recrutement d'escouade et cartes tactiques que le mode campagne, sans impact sur les crédits, XP ni blessures permanentes du gang.</p>` : ''}
             
+            <div style="margin-bottom:12px;">
+                <label style="font-weight:bold;">Territoire de la partie :</label>
+                <select id="territory-select" style="width:100%; padding:8px; margin-top:4px; background:#222; color:#fff; border:1px solid var(--accent-purple);" onchange="changeTerritory(this.value)">
+                    <option value="">-- Aucun territoire particulier --</option>
+                    ${((typeof db !== 'undefined' && db.territories) ? db.territories : []).map(t => `
+                        <option value="${t.id}" ${setupState.territoryId === t.id ? 'selected' : ''}>${t.name}</option>
+                    `).join('')}
+                </select>
+                ${(() => {
+                    let tDef = setupState.territoryId ? getTerritoryDef(setupState.territoryId) : null;
+                    return tDef ? `
+                        <div style="background:#181824; border:1px solid var(--accent-cyan); padding:8px 10px; border-radius:5px; margin-top:6px; font-size:12px;">
+                            <strong style="color:var(--accent-cyan);">${tDef.name}</strong> — ${tDef.battleEffect || 'Aucun effet en jeu.'}
+                        </div>
+                    ` : '';
+                })()}
+            </div>
+
             <div style="margin-bottom:12px;">
                 <label style="font-weight:bold;">Type de recrutement / Scénario :</label>
                 <select id="scenario-select" style="width:100%; padding:8px; margin-top:4px; background:#222; color:#fff; border:1px solid var(--accent-purple);" onchange="changeScenario(this.value)">
@@ -1035,6 +1058,11 @@ function renderStep2View(availableMembers) {
     return html;
 }
 
+function changeTerritory(id) {
+    setupState.territoryId = id || null;
+    renderGameSetup(document.getElementById('main-content'));
+}
+
 function changeScenario(key) {
     resetSetupState();
     setupState.scenarioKey = key;
@@ -1163,7 +1191,8 @@ function startGame() {
         round: 1,
         bottleCheckRequired: false,
         bottleCheckDoneThisRound: false,
-        isBottledOut: false
+        isBottledOut: false,
+        territoryId: setupState.territoryId || null
     };
 
     // Ajoute un guerrier au roster de jeu ET, automatiquement, le(s) familier(s)
@@ -1387,6 +1416,10 @@ function adjLiveXP(fighterIdx, key, delta) {
 function getFighterBattleXP(m) {
     if (!m) return 1;
     let lx = m.liveXP || { assistance: 0, objective: 0, seriouslyInjured: 0, scenario: 0, ooaKills: 0 };
-    return 1 + (lx.assistance || 0) + (lx.objective || 0) + (lx.seriouslyInjured || 0) + (lx.scenario || 0) + ((lx.ooaKills || 0) * 2);
+    // Territoire Fighting Pit (voir battleXpBonusPerKillOrSI dans db.territories) :
+    // +1 XP en plus par ennemi mis OOA ou sérieusement blessé.
+    let tDef = (typeof gameScores !== 'undefined' && gameScores) ? getTerritoryDef(gameScores.territoryId) : null;
+    let fpBonus = (tDef && tDef.battleXpBonusPerKillOrSI) || 0;
+    return 1 + (lx.assistance || 0) + (lx.objective || 0) + (lx.seriouslyInjured || 0) * (1 + fpBonus) + (lx.scenario || 0) + ((lx.ooaKills || 0) * (2 + fpBonus));
 }
 

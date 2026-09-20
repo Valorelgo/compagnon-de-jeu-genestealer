@@ -133,6 +133,10 @@ function openFighterDetailModal(idx) {
     // Frénésie (condition de jeu uniquement, cf. Berserker) : +1A tant qu'elle
     // est active. Même présentation que les bonus d'armure (formatStatWithArmorDelta).
     let frenzyDelta = (m.conditions && m.conditions['Frénésie']) ? 1 : 0;
+    // Territoire Mess Shack (voir battleLdBonus dans db.territories) : +1 Ld
+    // pour tous les guerriers tant que la partie se joue sur ce territoire.
+    let territoryDefForLd = (typeof gameScores !== 'undefined' && gameScores) ? getTerritoryDef(gameScores.territoryId) : null;
+    let ldDelta = (territoryDefForLd && territoryDefForLd.battleLdBonus) || 0;
 
     // 4. MISE EN PAGE PAYSAGE : 2 COLONNES (GAUCHE = CARACTÉRISTIQUES + COMPÉTENCES / DROITE = ARMES + TRAITS)
     let html = `
@@ -196,7 +200,7 @@ function openFighterDetailModal(idx) {
                                         <td>${armorDeltas && armorDeltas.I !== undefined ? formatStatWithArmorDelta(st.I, armorDeltas.I) : (st.I||'-')}</td>
                                         <td>${frenzyDelta ? formatStatWithArmorDelta(st.A, frenzyDelta) : (st.A||'-')}</td>
                                         <td>${armorDeltas && armorDeltas.Sv !== undefined ? formatStatWithArmorDelta(st.Sv, armorDeltas.Sv) : (st.Sv||'-')}</td>
-                                        <td>${st.Ld||'-'}</td><td>${st.Cl||'-'}</td><td>${st.Wil||'-'}</td>
+                                        <td>${ldDelta ? formatStatWithArmorDelta(st.Ld, ldDelta) : (st.Ld||'-')}</td><td>${st.Cl||'-'}</td><td>${st.Wil||'-'}</td>
                                         <td>${st.Int||'-'}</td>
                                     </tr>
                                 </tbody>
