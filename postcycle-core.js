@@ -30,6 +30,7 @@ function renderPostCycleView(container) {
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
                     <button class="btn btn-cyan" onclick="openPostCycleRecruitModal()">➕ Recruter un Combattant</button>
                     <button class="btn btn-cyan" onclick="openStashModal()">📦 Réserve du Gang (Stash)</button>
+                    <button class="${currentGang.pauseCycleUsed ? 'btn' : 'btn btn-cyan'}" style="${currentGang.pauseCycleUsed ? 'opacity:0.5;' : ''}" onclick="openPauseCycleModal()">⏸️ Cycle de pause${currentGang.pauseCycleUsed ? ' (déjà utilisé)' : ''}</button>
                 </div>
             </div>
             <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
@@ -183,6 +184,55 @@ function renderPostCycleView(container) {
     `;
 
     container.innerHTML = html;
+}
+
+// Cycle de pause : événement de campagne à mi-parcours où chaque gang reçoit
+// 250 crédits à dépenser en guerriers et équipements. currentGang.pauseCycleUsed
+// trace si le gang l'a déjà utilisé (le bouton se grise mais reste cliquable,
+// pour permettre un second passage volontaire ou la correction d'une erreur).
+function openPauseCycleModal() {
+    if (!currentGang) return;
+
+    if (!currentGang.pauseCycleUsed) {
+        showConfirmModal(
+            "⏸️ Cycle de pause",
+            "Confirmez-vous qu'il s'agit bien du cycle de pause de la campagne ? Votre gang va recevoir <strong>250 crédits</strong> à dépenser en guerriers et équipements.",
+            "Confirmer (+250 cr)",
+            () => applyPauseCycle()
+        );
+        return;
+    }
+
+    const html = `
+        <div style="padding: 10px 0;">
+            <div style="font-size: 15px; margin-bottom: 18px; line-height: 1.5; color: #eee;">
+                ⚠️ Attention, vous avez déjà utilisé le cycle de pause. Êtes-vous sûr de vouloir continuer ?
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap:wrap;">
+                <button class="btn" style="padding: 8px 16px; margin:0;" onclick="closeModal();">Annuler</button>
+                <button class="btn-danger" style="padding: 8px 16px; margin:0;" onclick="closeModal(); undoPauseCycle();">Cycle de pause fait par erreur ? (-250 cr)</button>
+                <button class="btn btn-cyan" style="padding: 8px 20px; font-weight: bold; margin:0;" onclick="closeModal(); applyPauseCycle();">Confirmer quand même (+250 cr)</button>
+            </div>
+        </div>
+    `;
+    openModal("⏸️ Cycle de pause déjà utilisé", html);
+}
+
+function applyPauseCycle() {
+    if (!currentGang) return;
+    currentGang.credits = (currentGang.credits || 0) + 250;
+    currentGang.pauseCycleUsed = true;
+    saveGangs();
+    showToast("Cycle de pause : +250 crédits reçus.", "success");
+    renderPostCycleView(document.getElementById('main-content'));
+}
+
+function undoPauseCycle() {
+    if (!currentGang) return;
+    currentGang.credits = (currentGang.credits || 0) - 250;
+    saveGangs();
+    showToast("Cycle de pause annulé : -250 crédits.", "success");
+    renderPostCycleView(document.getElementById('main-content'));
 }
 
 function openPostCycleEquipment(fighterId) {
