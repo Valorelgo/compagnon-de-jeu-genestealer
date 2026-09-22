@@ -20,6 +20,10 @@ function renderPostBattleView(container) {
     updateGameTopBar();
 
     let ooaFighters = (currentGang.members || []).filter(m => m.ooa === true && !m.isFamiliar);
+    // Guerriers ayant terminé la partie Sérieusement blessé (sans avoir fui, sans
+    // être déjà Out of action) : en attente du jet de fin de partie manuel — voir
+    // resolveSeriousInjuryEndCheck() et processEndGame() (game-roster-view.js).
+    let pendingSICheckFighters = (currentGang.members || []).filter(m => m.pendingSeriousInjuryCheck === true && !m.isFamiliar);
     let totalEnemiesOOA = currentGameRoster.reduce((sum, m) => sum + ((m.liveXP && m.liveXP.ooaKills) ? m.liveXP.ooaKills : 0), 0);
 
     // Territoire Corpse Farm (voir battleCreditsPerOOA dans db.territories) :
@@ -122,6 +126,31 @@ function renderPostBattleView(container) {
                 })()}
             </div>
 
+            <h3>⚕️ Jet de Fin de Partie — Guerriers Sérieusement Blessés</h3>
+    `;
+
+    if (pendingSICheckFighters.length > 0) {
+        html += `
+            <p style="font-size:12.5px; color:#ddd; margin-bottom:10px;">
+                Pour chaque guerrier ci-dessous : <strong>jetez un D6, sur 1-2 il finit Hors de combat, sinon il s'en sort indemne.</strong> Lancez un dé physique puis confirmez le résultat.
+            </p>
+        `;
+        pendingSICheckFighters.forEach(m => {
+            html += `
+                <div style="border: 1px solid #f39c12; padding: 10px 12px; margin-bottom: 8px; border-radius: 6px; background: #221a08; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                    <div><strong style="color:#f39c12;">${m.customName}</strong> <span style="color:#aaa; font-size:12px;">(${m.charName})</span></div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn" style="margin:0; padding:6px 14px;" onclick="resolveSeriousInjuryEndCheck('${m.id}', false)">3+ : Indemne</button>
+                        <button class="btn-danger" style="margin:0; padding:6px 14px; font-weight:bold;" onclick="resolveSeriousInjuryEndCheck('${m.id}', true)">1-2 : Hors de combat</button>
+                    </div>
+                </div>
+            `;
+        });
+    } else {
+        html += `<p style="color:var(--status-ready, #00ff00);">✓ Aucun guerrier n'a besoin de ce jet.</p>`;
+    }
+
+    html += `
             <h3>1. Résolution des Blessures Permanentes (Out of Action)</h3>
     `;
 
@@ -132,6 +161,8 @@ function renderPostBattleView(container) {
             let reasonBadge = '';
             if (m.ooaReason === 'fuyard_blessé' || (m.lastBattleGain && m.lastBattleGain.wasSeriouslyInjuredWhenFled)) {
                 reasonBadge = `<span style="background:#c0392b; color:#fff; font-size:11px; padding:2px 8px; border-radius:3px; font-weight:bold; margin-left:8px;">⚠️ Fuyard ayant quitté le combat en étant sérieusement blessé</span>`;
+            } else if (m.ooaReason === 'sérieusement_blessé_fin_partie') {
+                reasonBadge = `<span style="background:#c0392b; color:#fff; font-size:11px; padding:2px 8px; border-radius:3px; font-weight:bold; margin-left:8px;">🎲 Jet de fin de partie (Sérieusement blessé) échoué</span>`;
             } else {
                 reasonBadge = `<span style="background:#7f1d1d; color:#fca5a5; font-size:11px; padding:2px 8px; border-radius:3px; font-weight:bold; margin-left:8px;">Mis Hors de Combat (Out of Action)</span>`;
             }
@@ -303,6 +334,29 @@ window.transferFighterGearToStash = transferFighterGearToStash;
 
 // Affiche/masque le champ "Cible de la Haine" et ouvre la modale de capture,
 // selon la blessure sélectionnée dans le menu déroulant.
+// Résout le jet de fin de partie d'un guerrier Sérieusement blessé (voir
+// pendingSeriousInjuryCheck, posé par processEndGame() dans game-roster-view.js).
+// isOOA=true (1-2) : le guerrier passe en attente de blessure permanente,
+// exactement comme un guerrier Out of Action classique — il apparaîtra
+// automatiquement dans la section "Résolution des Blessures Permanentes"
+// ci-dessous au prochain rendu (ooaFighters est recalculé à chaque appel).
+// isOOA=false (3+) : le guerrier s'en sort indemne, rien d'autre à faire.
+function resolveSeriousInjuryEndCheck(memberId, isOOA) {
+    if (!currentGang || !currentGang.members) return;
+    let m = currentGang.members.find(x => x.id === memberId);
+    if (!m) return;
+
+    m.pendingSeriousInjuryCheck = false;
+    if (isOOA) {
+        m.ooa = true;
+        m.ooaReason = 'sérieusement_blessé_fin_partie';
+        showToast(`${m.customName} : Hors de combat — attribuez sa blessure permanente ci-dessous.`, "error");
+    } else {
+        showToast(`${m.customName} s'en sort indemne.`, "success");
+    }
+    renderPostBattleView(document.getElementById('main-content'));
+}
+
 function onInjurySelectChange(fighterId, value) {
     if (value === 'captured') {
         openCapturedModal(fighterId);

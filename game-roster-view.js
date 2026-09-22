@@ -183,6 +183,10 @@ function renderGameView(container) {
                                     <input type="checkbox" ${m.activated ? 'checked' : ''} ${isFuyard ? 'disabled' : ''} onchange="toggleActivation(${idx})"> Activé
                                 </label>
                             </div>
+
+                            ${m.status === 'Sérieusement blessé' ? `
+                                <button class="btn-danger" style="padding:4px 10px; font-size:11px; margin:0;" onclick="attemptLeaveBattle(${idx})" title="Tenter de quitter le combat avant la fin de la partie">🚑 Quitter le combat</button>
+                            ` : ''}
                         `}
                     </div>
                 </div>
@@ -202,6 +206,48 @@ function renderGameView(container) {
 function toggleActivation(idx) {
     if (currentGameRoster[idx]) {
         currentGameRoster[idx].activated = !currentGameRoster[idx].activated;
+        renderGameView(document.getElementById('main-content'));
+    }
+}
+
+// Un guerrier Sérieusement blessé peut tenter de quitter le combat avant la
+// fin de la partie, aux mêmes conditions que le jet de fin de partie (voir
+// resolveSeriousInjuryEndCheck en post-bataille) : D6, 1-2 Hors de combat,
+// 3+ indemne. On réutilise updateFighterStatus() pour profiter de tous ses
+// effets de bord existants (bottle check, familier qui fuit avec son
+// propriétaire, alerte Out of action...).
+function attemptLeaveBattle(idx) {
+    if (!currentGameRoster[idx]) return;
+    const html = `
+        <div style="padding: 6px 0;">
+            <div style="font-size: 14px; margin-bottom: 18px; line-height: 1.5; color: #eee;">
+                <strong>${currentGameRoster[idx].customName}</strong> tente de quitter le combat.<br><br>
+                Jetez un D6 : <strong>sur 1-2, il finit Hors de combat</strong> (blessure permanente à déterminer en après-bataille). <strong>Sur 3+, il s'en sort indemne</strong> et quitte la partie.<br><br>
+                Lancez un dé physique, puis confirmez le résultat ci-dessous.
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap:wrap;">
+                <button class="btn" style="padding: 8px 16px; margin:0;" onclick="closeModal();">Annuler</button>
+                <button class="btn" style="padding: 8px 16px; margin:0;" onclick="closeModal(); resolveLeaveBattleAttempt(${idx}, false);">3+ : Indemne</button>
+                <button class="btn-danger" style="padding: 8px 16px; font-weight:bold; margin:0;" onclick="closeModal(); resolveLeaveBattleAttempt(${idx}, true);">1-2 : Hors de combat</button>
+            </div>
+        </div>
+    `;
+    openModal("🚑 Tenter de quitter le combat", html);
+}
+
+function resolveLeaveBattleAttempt(idx, isOOA) {
+    if (!currentGameRoster[idx]) return;
+    if (isOOA) {
+        updateFighterStatus(idx, 'Out of action');
+        showToast(`${currentGameRoster[idx].customName} est Hors de combat en tentant de quitter le champ de bataille.`, "error");
+    } else {
+        updateFighterStatus(idx, 'Fuyard');
+        // Le jet est réussi : contrairement à une fuite classique depuis l'état
+        // Sérieusement blessé, il est ici protégé (pas de blessure permanente),
+        // updateFighterStatus() ayant mis wasSeriouslyInjuredWhenFled à true par
+        // défaut dans ce cas précis — on le corrige explicitement.
+        currentGameRoster[idx].wasSeriouslyInjuredWhenFled = false;
+        showToast(`${currentGameRoster[idx].customName} quitte le combat indemne.`, "success");
         renderGameView(document.getElementById('main-content'));
     }
 }
@@ -825,6 +871,7 @@ function processEndGame() {
                 // sérieusement blessés au moment où ils ont fui !
                 let isOOA = false;
                 let ooaReason = null;
+                gangFighter.pendingSeriousInjuryCheck = false;
 
                 if (battleFighter.status === 'Fuyard') {
                     if (battleFighter.wasSeriouslyInjuredWhenFled === true) {
@@ -834,9 +881,20 @@ function processEndGame() {
                         isOOA = false;
                         ooaReason = null;
                     }
-                } else if (battleFighter.status === 'Out of action' || (battleFighter.currentHP <= 0 && battleFighter.status !== 'Fuyard')) {
+                } else if (battleFighter.status === 'Out of action' || (battleFighter.currentHP <= 0 && battleFighter.status !== 'Fuyard' && battleFighter.status !== 'Sérieusement blessé')) {
                     isOOA = true;
                     ooaReason = 'hors_de_combat';
+                } else if (battleFighter.status === 'Sérieusement blessé') {
+                    // RÈGLE JET DE FIN DE PARTIE : un guerrier qui termine la partie
+                    // Sérieusement blessé (sans avoir fui, sans être déjà Out of action)
+                    // n'est PAS automatiquement décidé ici. Le joueur doit lancer un D6
+                    // physique ("sur 1-2 il finit hors de combat, sinon il s'en sort
+                    // indemne") et confirmer le résultat dans le bloc dédié de
+                    // renderPostBattleView() (postbattle-sequence.js) —
+                    // voir resolveSeriousInjuryEndCheck().
+                    isOOA = false;
+                    ooaReason = null;
+                    gangFighter.pendingSeriousInjuryCheck = true;
                 }
 
                 // Un familier ne prend jamais de blessure permanente : il ne doit
@@ -844,6 +902,7 @@ function processEndGame() {
                 if (gangFighter.isFamiliar) {
                     isOOA = false;
                     ooaReason = null;
+                    gangFighter.pendingSeriousInjuryCheck = false;
                 }
 
                 gangFighter.ooa = isOOA;
