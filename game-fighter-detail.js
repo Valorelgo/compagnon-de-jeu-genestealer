@@ -242,19 +242,20 @@ function openFighterDetailModal(idx) {
                             <table style="margin:0;">
                                 <thead>
                                     <tr>
-                                        <th style="width: 28%; text-align:left; padding-left:6px;">Arme</th>
-                                        <th style="width: 8%;">SR</th>
-                                        <th style="width: 8%;">LR</th>
-                                        <th style="width: 8%;">S</th>
-                                        <th style="width: 8%;">AP</th>
-                                        <th style="width: 8%;">D</th>
-                                        <th style="width: 20%;">Traits</th>
-                                        <th style="width: 16%;">Munitions</th>
+                                        <th style="width: 22%; text-align:left; padding-left:6px;">Arme</th>
+                                        <th style="width: 12%;">Tir</th>
+                                        <th style="width: 7%;">SR</th>
+                                        <th style="width: 7%;">LR</th>
+                                        <th style="width: 7%;">S</th>
+                                        <th style="width: 7%;">AP</th>
+                                        <th style="width: 7%;">D</th>
+                                        <th style="width: 17%;">Traits</th>
+                                        <th style="width: 14%;">Munitions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     ${combatItems.length === 0 ? `
-                                        <tr><td colspan="8" style="padding:10px; color:#888; text-align:center;">Aucune arme ou grenade équipée.</td></tr>
+                                        <tr><td colspan="9" style="padding:10px; color:#888; text-align:center;">Aucune arme ou grenade équipée.</td></tr>
                                     ` : combatItems.map(({ item: w, isGrenade, listType, itemIndex }) => {
                                         // Une arme à profils multiples (fusil à pompe, lance-grenades...) affiche
                                         // une ligne de tableau par profil, avec le nom de l'arme et les contrôles
@@ -281,11 +282,12 @@ function openFighterDetailModal(idx) {
 
                                         return profiles.map((prof, pIdx) => {
                                             const profLabel = (hasMultipleProfiles && prof.name && prof.name.toLowerCase() !== 'unique')
-                                                ? `<br><small style="color:#aaa;">- ${prof.name}</small>` : '';
+                                                ? prof.name : '-';
                                             return `
                                             <tr>
                                                 ${pIdx === 0 ? `<td rowspan="${profiles.length}" style="text-align:left; padding-left:6px; vertical-align:top;"><strong>${w.name}</strong>${badge}${accText}</td>` : ''}
-                                                <td>${prof.SR}${profLabel}</td>
+                                                <td style="text-align:left; padding-left:4px;"><small style="color:#aaa;">${profLabel}</small></td>
+                                                <td>${prof.SR}</td>
                                                 <td>${prof.LR}</td>
                                                 <td>${prof.S}</td>
                                                 <td>${prof.AP}</td>
